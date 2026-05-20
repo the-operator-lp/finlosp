@@ -4,6 +4,7 @@ import '../../localization.dart';
 import '../../state/app_state.dart';
 import '../widgets/custom_charts.dart';
 import '../../services/currency_service.dart';
+import '../../services/ad_service.dart';
 
 class TrackingScreen extends StatefulWidget {
   const TrackingScreen({super.key});
@@ -894,7 +895,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
                           );
                         },
                       ),
-              )
+              ),
+              const SponsorBannerAd(),
             ],
           ),
         ),

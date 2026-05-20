@@ -4,6 +4,7 @@ import '../../localization.dart';
 import '../../state/app_state.dart';
 import '../widgets/custom_charts.dart';
 import '../../services/currency_service.dart';
+import '../../services/ad_service.dart';
 
 class InputScreen extends StatefulWidget {
   const InputScreen({super.key});
@@ -98,13 +99,16 @@ class _InputScreenState extends State<InputScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+
+    // Trigger interstitial ad every 3 successful transaction logs
+    state.incrementTransactionCount(context);
   }
 
   @override
   Widget build(BuildContext context) {
     final state = AppStateProvider.of(context);
     final locale = state.locale;
-    final isDark = state.themeMode == ThemeMode.dark;
+    final isDark = state.themeMode == ThemeMode.dark || state.themeName == 'gold';
     
     // Supported Categories filtered by type
     final filteredCategories = state.categories.where((c) => c.isIncome == (_selectedType == TransactionType.income)).toList();
@@ -585,7 +589,10 @@ class _InputScreenState extends State<InputScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 16),
+
+                // Sponsor Banner Ad (premium non-intrusive placement)
+                const SponsorBannerAd(),
 
                 // Today's cash flow highlights
                 Text(

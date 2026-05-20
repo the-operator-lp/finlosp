@@ -4,6 +4,8 @@ import '../services/price_service.dart';
 import '../services/storage_service.dart';
 import '../services/currency_service.dart';
 import '../services/notification_service.dart';
+import '../services/ad_service.dart';
+import '../services/update_service.dart';
 
 class AppState extends ChangeNotifier {
   final StorageService _storageService = StorageService();
@@ -32,6 +34,18 @@ class AppState extends ChangeNotifier {
   };
   List<AppCategory> _categories = [];
   ThemeMode _themeMode = ThemeMode.dark;
+  String _themeName = 'dark'; // 'dark' (Slate), 'light' (Cream), 'gold' (Luxurious Gold)
+
+  // New Phase 3 Properties
+  bool _adsEnabled = true;
+  bool _isGoldThemeUnlocked = false;
+  String _currentVersion = '1.0.0+1';
+  String _latestVersion = '1.0.0+1';
+  bool _updateAvailable = false;
+  String _updateReleaseNotes = '';
+  bool _isDownloadingUpdate = false;
+  double _downloadProgress = 0.0;
+  bool _updateSuccess = false;
 
   bool _isLoading = false;
   bool _isLivePrices = true; // Tracks if last price refresh was from Yahoo API
@@ -54,6 +68,18 @@ class AppState extends ChangeNotifier {
   Map<String, double> get exchangeRates => _exchangeRates;
   List<AppCategory> get categories => _categories;
   ThemeMode get themeMode => _themeMode;
+
+  // New Phase 3 Getters
+  String get themeName => _themeName;
+  bool get adsEnabled => _adsEnabled;
+  bool get isGoldThemeUnlocked => _isGoldThemeUnlocked;
+  String get currentVersion => _currentVersion;
+  String get latestVersion => _latestVersion;
+  bool get updateAvailable => _updateAvailable;
+  String get updateReleaseNotes => _updateReleaseNotes;
+  bool get isDownloadingUpdate => _isDownloadingUpdate;
+  double get downloadProgress => _downloadProgress;
+  bool get updateSuccess => _updateSuccess;
 
   // Analytical getters
   double get totalPortfolioValue => _assets.fold(0.0, (sum, asset) => sum + asset.totalValue);
@@ -109,6 +135,20 @@ class AppState extends ChangeNotifier {
         (e) => e.toString() == data.themeMode,
         orElse: () => ThemeMode.dark,
       );
+      // Determine theme name from saved themeMode representation or direct themeName
+      if (data.currentVersion == '1.1.0' || data.isGoldThemeUnlocked) {
+        _isGoldThemeUnlocked = true;
+      }
+      _themeName = data.themeMode.contains('ThemeMode.dark')
+          ? 'dark'
+          : data.themeMode.contains('ThemeMode.light')
+              ? 'light'
+              : data.currentVersion == '1.1.0' && data.themeMode.contains('gold')
+                  ? 'gold'
+                  : data.themeMode.replaceAll('ThemeMode.', ''); // handles direct string keys like 'gold', 'light', etc.
+      
+      _adsEnabled = data.adsEnabled;
+      _currentVersion = data.currentVersion;
 
       // Recalculate budget spent amounts just to be 100% correct
       _recalculateBudgetSpent();
@@ -366,7 +406,10 @@ class AppState extends ChangeNotifier {
       selectedCurrency: _selectedCurrency,
       exchangeRates: _exchangeRates,
       categoriesJson: _categories.map((c) => c.toJson()).toList(),
-      themeMode: _themeMode.toString(),
+      themeMode: _themeName,
+      adsEnabled: _adsEnabled,
+      isGoldThemeUnlocked: _isGoldThemeUnlocked,
+      currentVersion: _currentVersion,
     );
     await _storageService.saveData(data);
   }
@@ -602,8 +645,94 @@ class AppState extends ChangeNotifier {
 
   void setThemeMode(ThemeMode mode) {
     _themeMode = mode;
+    _themeName = mode == ThemeMode.dark ? 'dark' : 'light';
     _saveState();
     notifyListeners();
+  }
+
+  void setThemeName(String name) {
+    if (name == 'gold' && !_isGoldThemeUnlocked) return;
+    _themeName = name;
+    _themeMode = name == 'light' ? ThemeMode.light : ThemeMode.dark;
+    _saveState();
+    notifyListeners();
+  }
+
+  // --- Sponsor Ads & Interstitial ---
+  void setAdsEnabled(bool value) {
+    _adsEnabled = value;
+    _saveState();
+    notifyListeners();
+  }
+
+  int _transactionLogCount = 0;
+
+  void incrementTransactionCount(BuildContext context) {
+    if (!_adsEnabled) return;
+    _transactionLogCount++;
+    if (_transactionLogCount >= 3) {
+      _transactionLogCount = 0;
+      // Show fullscreen premium interstitial ad overlay
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (context.mounted) {
+          try {
+            VibrantInterstitialAd.show(context, () {});
+          } catch (e) {
+            debugPrint('Interstitial show error: $e');
+          }
+        }
+      });
+    }
+  }
+
+  // --- Over-The-Air (OTA) Updates ---
+
+  Future<void> checkOTAUpdates({bool silent = true}) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final UpdateService updateService = UpdateService();
+      final record = await updateService.checkForUpdates("https://example.com/ota-config");
+      _latestVersion = record.version;
+      _updateReleaseNotes = record.releaseNotes;
+      _updateAvailable = _latestVersion != _currentVersion;
+    } catch (e) {
+      debugPrint('Check OTA failed: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> executeOTAUpdate(VoidCallback onInstalled) async {
+    _isDownloadingUpdate = true;
+    _downloadProgress = 0.0;
+    _updateSuccess = false;
+    notifyListeners();
+
+    final UpdateService updateService = UpdateService();
+    await updateService.runOTAUpdate(
+      "https://example.com/apk",
+      this,
+      (progress) {
+        _downloadProgress = progress;
+        notifyListeners();
+      },
+      () {
+        _currentVersion = _latestVersion;
+        _isDownloadingUpdate = false;
+        _updateAvailable = false;
+        _updateSuccess = true;
+        _isGoldThemeUnlocked = true;
+        _saveState();
+        notifyListeners();
+        onInstalled();
+      },
+      (error) {
+        _isDownloadingUpdate = false;
+        notifyListeners();
+      }
+    );
   }
 
   // --- Dynamic settings & locale toggle ---

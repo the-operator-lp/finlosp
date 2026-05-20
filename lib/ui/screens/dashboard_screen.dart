@@ -3,6 +3,7 @@ import '../../models.dart';
 import '../../localization.dart';
 import '../../state/app_state.dart';
 import '../widgets/custom_charts.dart';
+import '../../services/ad_service.dart';
 
 class DashboardScreen extends StatelessWidget {
   final VoidCallback onNavigateToLedger;
@@ -13,7 +14,7 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = AppStateProvider.of(context);
     final locale = state.locale;
-    final isDark = state.themeMode == ThemeMode.dark;
+    final isDark = state.themeMode == ThemeMode.dark || state.themeName == 'gold';
 
     final backgroundColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
@@ -278,6 +279,9 @@ class DashboardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 _buildRecentTransactionsList(state, locale, cardColor, borderColor, textColor, mutedTextColor),
+
+                // Sponsor Banner Ad at the bottom of the dashboard
+                const SponsorBannerAd(),
               ],
             ),
           ),
@@ -628,203 +632,575 @@ class DashboardScreen extends StatelessWidget {
         return StatefulBuilder(
           builder: (context, setModalState) {
             final String reminderTimeStr = '${state.reminderHour.toString().padLeft(2, '0')}:${state.reminderMinute.toString().padLeft(2, '0')}';
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 28.0,
-                right: 28.0,
-                top: 28.0,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 28.0,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        AppLocalizations.translate('ui_settings', locale),
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Icon(Icons.close_rounded, color: textColor, size: 24),
-                      ),
-                    ],
+            return DraggableScrollableSheet(
+              initialChildSize: 0.85,
+              minChildSize: 0.5,
+              maxChildSize: 0.95,
+              expand: false,
+              builder: (context, scrollController) {
+                return SingleChildScrollView(
+                  controller: scrollController,
+                  padding: EdgeInsets.only(
+                    left: 28.0,
+                    right: 28.0,
+                    top: 28.0,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 28.0,
                   ),
-                  const SizedBox(height: 24),
-
-                  // Currency Picker Selection
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        locale == 'en' ? 'App Currency' : 'Đơn vị tiền tệ',
-                        style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w500),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                          border: Border.all(color: borderColor),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: state.selectedCurrency,
-                            dropdownColor: cardColor,
-                            icon: const Icon(Icons.arrow_drop_down, color: AppColors.violet),
-                            style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 14),
-                            items: ['USD', 'VND', 'EUR', 'JPY', 'GBP', 'SGD'].map((String val) {
-                              return DropdownMenuItem<String>(
-                                value: val,
-                                child: Text(val),
-                              );
-                            }).toList(),
-                            onChanged: (val) {
-                              if (val != null) {
-                                setModalState(() {
-                                  state.setCurrency(val);
-                                });
-                              }
-                            },
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            AppLocalizations.translate('ui_settings', locale),
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Theme Mode selection
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        locale == 'en' ? 'Dark Theme' : 'Giao diện tối',
-                        style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w500),
+                          GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Icon(Icons.close_rounded, color: textColor, size: 24),
+                          ),
+                        ],
                       ),
-                      Switch.adaptive(
-                        value: state.themeMode == ThemeMode.dark,
-                        activeColor: AppColors.violet,
-                        onChanged: (val) {
-                          setModalState(() {
-                            state.setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
-                          });
-                        },
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 20),
+                      const SizedBox(height: 24),
 
-                  // Enable Switch Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        AppLocalizations.translate('rm_enable_reminder', locale),
-                        style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w500),
-                      ),
-                      Switch.adaptive(
-                        value: state.remindersEnabled,
-                        activeColor: AppColors.violet,
-                        onChanged: (val) {
-                          setModalState(() {
-                            state.setReminderSettings(val, state.reminderHour, state.reminderMinute);
-                          });
-                        },
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Time Selection Row
-                  if (state.remindersEnabled) ...[
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          AppLocalizations.translate('rm_reminder_time', locale),
-                          style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w500),
-                        ),
-                        GestureDetector(
-                          onTap: () async {
-                            final TimeOfDay? time = await showTimePicker(
-                              context: context,
-                              initialTime: TimeOfDay(hour: state.reminderHour, minute: state.reminderMinute),
-                              builder: (context, child) {
-                                return Theme(
-                                  data: Theme.of(context).copyWith(
-                                    colorScheme: ColorScheme.dark(
-                                      primary: AppColors.violet,
-                                      onPrimary: Colors.white,
-                                      surface: cardColor,
-                                      onSurface: textColor,
-                                    ),
-                                  ),
-                                  child: child!,
-                                );
-                              },
-                            );
-                            if (time != null) {
-                              setModalState(() {
-                                state.setReminderSettings(true, time.hour, time.minute);
-                              });
-                            }
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      // ── CURRENCY ──────────────────────────────────────────
+                      _settingsSectionHeader(locale == 'en' ? 'Currency & Region' : 'Tiền tệ & Khu vực', textColor),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            locale == 'en' ? 'App Currency' : 'Đơn vị tiền tệ',
+                            style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w500),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
                               color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
                               border: Border.all(color: borderColor),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  reminderTimeStr,
-                                  style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.access_time_rounded, color: AppColors.violet, size: 16),
-                              ],
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: state.selectedCurrency,
+                                dropdownColor: cardColor,
+                                icon: const Icon(Icons.arrow_drop_down, color: AppColors.violet),
+                                style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 14),
+                                items: ['USD', 'VND', 'EUR', 'JPY', 'GBP', 'SGD'].map((String val) {
+                                  return DropdownMenuItem<String>(
+                                    value: val,
+                                    child: Text(val),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setModalState(() {
+                                      state.setCurrency(val);
+                                    });
+                                  }
+                                },
+                              ),
                             ),
-                          ),
-                        )
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: 20),
 
-                  // Mock push notifier button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.violet.withOpacity(0.12),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      // ── APPEARANCE ────────────────────────────────────────
+                      _settingsSectionHeader(locale == 'en' ? 'Appearance & Themes' : 'Giao diện & Chủ đề', textColor),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          _themeButton('dark', '🌙 Slate Dark', state, setModalState, isDark, cardColor, borderColor, textColor),
+                          const SizedBox(width: 8),
+                          _themeButton('light', '☀️ Cream Light', state, setModalState, isDark, cardColor, borderColor, textColor),
+                          const SizedBox(width: 8),
+                          _themeButton('gold', '✨ Vibrant Gold', state, setModalState, isDark, cardColor, borderColor, textColor,
+                              locked: !state.isGoldThemeUnlocked),
+                        ],
                       ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        state.triggerTestNotification();
-                      },
-                      child: Text(
-                        AppLocalizations.translate('rm_trigger_mock', locale),
-                        style: const TextStyle(color: AppColors.violet, fontSize: 14, fontWeight: FontWeight.bold),
+                      const SizedBox(height: 20),
+
+                      // ── NOTIFICATIONS ─────────────────────────────────────
+                      _settingsSectionHeader(locale == 'en' ? 'Daily Reminders' : 'Nhắc nhở hàng ngày', textColor),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            AppLocalizations.translate('rm_enable_reminder', locale),
+                            style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w500),
+                          ),
+                          Switch.adaptive(
+                            value: state.remindersEnabled,
+                            activeColor: AppColors.violet,
+                            onChanged: (val) {
+                              setModalState(() {
+                                state.setReminderSettings(val, state.reminderHour, state.reminderMinute);
+                              });
+                            },
+                          )
+                        ],
                       ),
-                    ),
+                      if (state.remindersEnabled) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              AppLocalizations.translate('rm_reminder_time', locale),
+                              style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w500),
+                            ),
+                            GestureDetector(
+                              onTap: () async {
+                                final TimeOfDay? time = await showTimePicker(
+                                  context: context,
+                                  initialTime: TimeOfDay(hour: state.reminderHour, minute: state.reminderMinute),
+                                  builder: (context, child) {
+                                    return Theme(
+                                      data: Theme.of(context).copyWith(
+                                        colorScheme: ColorScheme.dark(
+                                          primary: AppColors.violet,
+                                          onPrimary: Colors.white,
+                                          surface: cardColor,
+                                          onSurface: textColor,
+                                        ),
+                                      ),
+                                      child: child!,
+                                    );
+                                  },
+                                );
+                                if (time != null) {
+                                  setModalState(() {
+                                    state.setReminderSettings(true, time.hour, time.minute);
+                                  });
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                                  border: Border.all(color: borderColor),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      reminderTimeStr,
+                                      style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Icon(Icons.access_time_rounded, color: AppColors.violet, size: 16),
+                                  ],
+                                ),
+                              ),
+                            )
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.violet.withOpacity(0.12),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            state.triggerTestNotification();
+                          },
+                          child: Text(
+                            AppLocalizations.translate('rm_trigger_mock', locale),
+                            style: const TextStyle(color: AppColors.violet, fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // ── ADVERTISEMENTS ────────────────────────────────────
+                      _settingsSectionHeader(locale == 'en' ? 'Advertisement Settings' : 'Cài đặt quảng cáo', textColor),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                locale == 'en' ? 'Show Sponsor Ads' : 'Hiển thị quảng cáo',
+                                style: TextStyle(color: textColor, fontSize: 15, fontWeight: FontWeight.w500),
+                              ),
+                              Text(
+                                locale == 'en' ? 'Banner and interstitial ads' : 'Quảng cáo banner và toàn màn hình',
+                                style: TextStyle(color: mutedTextColor, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                          Switch.adaptive(
+                            value: state.adsEnabled,
+                            activeColor: const Color(0xFFF59E0B),
+                            onChanged: (val) => setModalState(() => state.setAdsEnabled(val)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: const Color(0xFFF59E0B).withOpacity(0.5)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          icon: const Icon(Icons.play_circle_outline_rounded, color: Color(0xFFF59E0B), size: 20),
+                          label: Text(
+                            locale == 'en' ? 'Demo Interstitial Ad' : 'Xem thử quảng cáo toàn màn hình',
+                            style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            Future.delayed(const Duration(milliseconds: 300), () {
+                              if (context.mounted) {
+                                VibrantInterstitialAd.show(context, () {});
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // ── OTA UPDATE CENTER ─────────────────────────────────
+                      _buildOTAUpdateCenter(context, state, locale, isDark, cardColor, borderColor, textColor, mutedTextColor, setModalState),
+                      const SizedBox(height: 12),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                ],
-              ),
+                );
+              },
             );
           },
         );
       },
+    );
+  }
+
+  Widget _settingsSectionHeader(String label, Color textColor) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(child: Divider(color: textColor.withOpacity(0.15), thickness: 1)),
+      ],
+    );
+  }
+
+  Widget _themeButton(String name, String label, AppState state, StateSetter setModalState,
+      bool isDark, Color cardColor, Color borderColor, Color textColor, {bool locked = false}) {
+    final bool isActive = state.themeName == name;
+    final Color accent = name == 'gold'
+        ? const Color(0xFFF59E0B)
+        : name == 'light'
+            ? const Color(0xFF8B5CF6)
+            : const Color(0xFF6366F1);
+    return Expanded(
+      child: GestureDetector(
+        onTap: locked
+            ? null
+            : () => setModalState(() => state.setThemeName(name)),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+          decoration: BoxDecoration(
+            color: isActive ? accent.withOpacity(0.15) : cardColor,
+            border: Border.all(
+              color: isActive ? accent : borderColor,
+              width: isActive ? 1.5 : 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (locked)
+                const Icon(Icons.lock_rounded, size: 14, color: Color(0xFF94A3B8))
+              else
+                Icon(Icons.circle, size: 10, color: isActive ? accent : Colors.transparent),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isActive ? accent : textColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOTAUpdateCenter(BuildContext context, AppState state, String locale,
+      bool isDark, Color cardColor, Color borderColor, Color textColor, Color mutedTextColor,
+      StateSetter setModalState) {
+    final Color goldAccent = const Color(0xFFF59E0B);
+    final bool hasUpdate = state.updateAvailable;
+    final bool isDownloading = state.isDownloadingUpdate;
+    final bool success = state.updateSuccess;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _settingsSectionHeader(locale == 'en' ? 'Update Center' : 'Trung tâm cập nhật', textColor),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+            border: Border.all(
+              color: success ? goldAccent.withOpacity(0.5) : borderColor,
+              width: success ? 1.5 : 1,
+            ),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Version row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        locale == 'en' ? 'Current Version' : 'Phiên bản hiện tại',
+                        style: TextStyle(color: mutedTextColor, fontSize: 11),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Vibrant Finance  v${state.currentVersion}',
+                        style: TextStyle(
+                          color: textColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (success)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: goldAccent.withOpacity(0.15),
+                        border: Border.all(color: goldAccent.withOpacity(0.5)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle_rounded, color: Color(0xFFF59E0B), size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            locale == 'en' ? 'Up to date!' : 'Mới nhất!',
+                            style: const TextStyle(color: Color(0xFFF59E0B), fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (hasUpdate)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.emerald.withOpacity(0.12),
+                        border: Border.all(color: AppColors.emerald.withOpacity(0.4)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        locale == 'en' ? '🚀 Update Available!' : '🚀 Có bản cập nhật!',
+                        style: const TextStyle(color: AppColors.emerald, fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                ],
+              ),
+
+              // Release notes (shown when update detected)
+              if (hasUpdate && state.updateReleaseNotes.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Text(
+                  locale == 'en' ? 'What\'s new in v${state.latestVersion}:' : 'Có gì mới trong v${state.latestVersion}:',
+                  style: TextStyle(color: mutedTextColor, fontSize: 12, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.emerald.withOpacity(0.06),
+                    border: Border.all(color: AppColors.emerald.withOpacity(0.2)),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    state.updateReleaseNotes.replaceAll('\\n', '\n'),
+                    style: TextStyle(color: textColor, fontSize: 12, height: 1.5),
+                  ),
+                ),
+              ],
+
+              // Download Progress
+              if (isDownloading) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Icon(Icons.download_rounded, color: AppColors.violet, size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      locale == 'en'
+                          ? 'Downloading update... ${(state.downloadProgress * 100).toInt()}%'
+                          : 'Đang tải xuống... ${(state.downloadProgress * 100).toInt()}%',
+                      style: TextStyle(color: textColor, fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(100),
+                  child: LinearProgressIndicator(
+                    value: state.downloadProgress,
+                    backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                    color: AppColors.violet,
+                    minHeight: 6,
+                  ),
+                ),
+              ],
+
+              // Gold theme unlock trophy
+              if (success) ...[
+                const SizedBox(height: 14),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [goldAccent.withOpacity(0.12), goldAccent.withOpacity(0.04)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(color: goldAccent.withOpacity(0.3)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('🏆', style: TextStyle(fontSize: 28)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              locale == 'en' ? 'Vibrant Gold Unlocked!' : 'Đã mở khóa Vibrant Gold!',
+                              style: const TextStyle(
+                                color: Color(0xFFF59E0B),
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              locale == 'en'
+                                  ? 'Switch to the Gold theme in Appearance above!'
+                                  : 'Chọn chủ đề Gold trong phần Giao diện phía trên!',
+                              style: TextStyle(color: mutedTextColor, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 14),
+
+              // Action buttons row
+              if (!isDownloading)
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: borderColor),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: Icon(Icons.refresh_rounded, color: textColor, size: 16),
+                        label: Text(
+                          locale == 'en' ? 'Check' : 'Kiểm tra',
+                          style: TextStyle(color: textColor, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        onPressed: () => setModalState(() {
+                          state.checkOTAUpdates();
+                        }),
+                      ),
+                    ),
+                    if (hasUpdate) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.violet,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.download_rounded, color: Colors.white, size: 16),
+                          label: Text(
+                            locale == 'en' ? 'Update Now' : 'Cập nhật ngay',
+                            style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                          onPressed: () {
+                            setModalState(() {});
+                            state.executeOTAUpdate(() {
+                              setModalState(() {});
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    locale == 'en'
+                                        ? '🚀 Vibrant Update v${state.currentVersion} installed! Gold Theme unlocked!'
+                                        : '🚀 Đã cài đặt phiên bản v${state.currentVersion}! Mở khóa Gold Theme!',
+                                  ),
+                                  backgroundColor: const Color(0xFFF59E0B),
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(seconds: 4),
+                                ),
+                              );
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

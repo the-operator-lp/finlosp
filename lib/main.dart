@@ -49,8 +49,8 @@ class _MyAppState extends State<MyApp> {
             title: 'Vibrant Finance',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: _appState.themeMode,
+            darkTheme: _appState.themeName == 'gold' ? AppTheme.goldTheme : AppTheme.darkTheme,
+            themeMode: _appState.themeName == 'light' ? ThemeMode.light : ThemeMode.dark,
             home: const MainShell(),
           );
         },

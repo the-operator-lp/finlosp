@@ -37,4 +37,22 @@ class AppTheme {
       ),
     );
   }
+
+  static ThemeData get goldTheme {
+    return ThemeData(
+      brightness: Brightness.dark,
+      fontFamily: 'Inter',
+      scaffoldBackgroundColor: const Color(0xFF16130C), // Deep obsidian gold canvas
+      colorScheme: const ColorScheme.dark(
+        primary: Color(0xFFF59E0B), // Golden Amber
+        secondary: Color(0xFFD97706), // Rich Bronze
+        surface: Color(0xFF252014), // Amber-Charcoal card bg
+        error: Color(0xFFF43F5E), // Rose
+      ),
+      cardTheme: const CardThemeData(
+        color: Color(0xFF252014),
+        elevation: 0,
+      ),
+    );
+  }
 }

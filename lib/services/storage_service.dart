@@ -19,6 +19,11 @@ class StorageData {
   final List<dynamic> categoriesJson;
   final String themeMode;
 
+  // New Phase 3 Ads & OTA Fields
+  final bool adsEnabled;
+  final bool isGoldThemeUnlocked;
+  final String currentVersion;
+
   StorageData({
     required this.transactionsJson,
     required this.budgetsJson,
@@ -33,6 +38,9 @@ class StorageData {
     required this.exchangeRates,
     required this.categoriesJson,
     required this.themeMode,
+    required this.adsEnabled,
+    required this.isGoldThemeUnlocked,
+    required this.currentVersion,
   });
 
   Map<String, dynamic> toJson() {
@@ -50,6 +58,9 @@ class StorageData {
       'exchangeRates': exchangeRates,
       'categories': categoriesJson,
       'themeMode': themeMode,
+      'adsEnabled': adsEnabled,
+      'isGoldThemeUnlocked': isGoldThemeUnlocked,
+      'currentVersion': currentVersion,
     };
   }
 
@@ -77,6 +88,9 @@ class StorageData {
       exchangeRates: rates,
       categoriesJson: json['categories'] as List<dynamic>? ?? [],
       themeMode: json['themeMode'] as String? ?? 'ThemeMode.dark',
+      adsEnabled: json['adsEnabled'] as bool? ?? true,
+      isGoldThemeUnlocked: json['isGoldThemeUnlocked'] as bool? ?? false,
+      currentVersion: json['currentVersion'] as String? ?? '1.0.0+1',
     );
   }
 }
