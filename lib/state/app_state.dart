@@ -17,6 +17,9 @@ class AppState extends ChangeNotifier {
   List<InvestmentAsset> _assets = [];
   List<InvestmentTransaction> _investmentTransactions = [];
   double _cashReserves = 50000.0;
+  double _cashBalance = 15000.0;
+  double _bankingBalance = 30000.0;
+  double _ewalletBalance = 5000.0;
   String _locale = 'en';
   bool _remindersEnabled = true;
   int _reminderHour = 20; // 8:00 PM
@@ -56,6 +59,9 @@ class AppState extends ChangeNotifier {
   List<InvestmentAsset> get assets => _assets;
   List<InvestmentTransaction> get investmentTransactions => _investmentTransactions;
   double get cashReserves => _cashReserves;
+  double get cashBalance => _cashBalance;
+  double get bankingBalance => _bankingBalance;
+  double get ewalletBalance => _ewalletBalance;
   String get locale => _locale;
   bool get remindersEnabled => _remindersEnabled;
   int get reminderHour => _reminderHour;
@@ -99,6 +105,24 @@ class AppState extends ChangeNotifier {
         .fold(0.0, (sum, t) => sum + t.amount);
   }
 
+  double get todayExpenses {
+    final now = DateTime.now();
+    return _transactions
+        .where((t) =>
+            t.type == TransactionType.expense &&
+            t.dateTime.day == now.day &&
+            t.dateTime.month == now.month &&
+            t.dateTime.year == now.year)
+        .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
+  double get todayRemainingBudget {
+    final totalMonthlyBudget = _budgets.fold(0.0, (sum, b) => sum + b.limitAmount);
+    if (totalMonthlyBudget <= 0) return 0.0;
+    final dailyBudget = totalMonthlyBudget / 30.0;
+    return dailyBudget - todayExpenses;
+  }
+
   AppState() {
     _init();
   }
@@ -116,7 +140,10 @@ class AppState extends ChangeNotifier {
       _budgets = data.budgetsJson.map((json) => Budget.fromJson(json)).toList();
       _assets = data.assetsJson.map((json) => InvestmentAsset.fromJson(json)).toList();
       _investmentTransactions = data.investTransactionsJson.map((json) => InvestmentTransaction.fromJson(json)).toList();
-      _cashReserves = data.cashReserves;
+      _cashBalance = data.cashBalance;
+      _bankingBalance = data.bankingBalance;
+      _ewalletBalance = data.ewalletBalance;
+      _cashReserves = _cashBalance + _bankingBalance + _ewalletBalance;
       _locale = data.locale;
       _remindersEnabled = data.remindersEnabled;
       _reminderHour = data.reminderHour;
@@ -180,7 +207,10 @@ class AppState extends ChangeNotifier {
 
   void _populateDefaultData() {
     _locale = 'en';
-    _cashReserves = 25000.0;
+    _cashBalance = 7500.0;
+    _bankingBalance = 15000.0;
+    _ewalletBalance = 2500.0;
+    _cashReserves = _cashBalance + _bankingBalance + _ewalletBalance;
     _remindersEnabled = true;
     _reminderHour = 20;
     _reminderMinute = 0;
@@ -410,29 +440,68 @@ class AppState extends ChangeNotifier {
       adsEnabled: _adsEnabled,
       isGoldThemeUnlocked: _isGoldThemeUnlocked,
       currentVersion: _currentVersion,
+      cashBalance: _cashBalance,
+      bankingBalance: _bankingBalance,
+      ewalletBalance: _ewalletBalance,
     );
     await _storageService.saveData(data);
   }
 
   // --- Transactions management ---
 
+  void _adjustBalance(String method, double usdAmount, TransactionType type, {bool isReverse = false}) {
+    // If expense: isReverse ? adds to balance : deducts from balance
+    // If income: isReverse ? deducts from balance : adds to balance
+    double change = usdAmount;
+    if (type == TransactionType.expense) {
+      change = isReverse ? usdAmount : -usdAmount;
+    } else {
+      change = isReverse ? -usdAmount : usdAmount;
+    }
+
+    switch (method.toLowerCase()) {
+      case 'banking':
+        _bankingBalance += change;
+        break;
+      case 'ewallet':
+        _ewalletBalance += change;
+        break;
+      case 'cash':
+      default:
+        _cashBalance += change;
+        break;
+    }
+    _cashReserves = _cashBalance + _bankingBalance + _ewalletBalance;
+  }
+
   void addTransaction(Transaction transaction) {
     _transactions.insert(0, transaction);
+    _adjustBalance(transaction.paymentMethod, transaction.amount, transaction.type);
     _recalculateBudgetSpent();
     _saveState();
     notifyListeners();
   }
 
   void deleteTransaction(String id) {
-    _transactions.removeWhere((t) => t.id == id);
-    _recalculateBudgetSpent();
-    _saveState();
-    notifyListeners();
+    final index = _transactions.indexWhere((t) => t.id == id);
+    if (index != -1) {
+      final transaction = _transactions[index];
+      _adjustBalance(transaction.paymentMethod, transaction.amount, transaction.type, isReverse: true);
+      _transactions.removeAt(index);
+      _recalculateBudgetSpent();
+      _saveState();
+      notifyListeners();
+    }
   }
 
   void updateTransaction(Transaction transaction) {
     final index = _transactions.indexWhere((t) => t.id == transaction.id);
     if (index != -1) {
+      final oldTransaction = _transactions[index];
+      // First reverse the old balance adjustment
+      _adjustBalance(oldTransaction.paymentMethod, oldTransaction.amount, oldTransaction.type, isReverse: true);
+      // Then apply the new balance adjustment
+      _adjustBalance(transaction.paymentMethod, transaction.amount, transaction.type);
       _transactions[index] = transaction;
       _recalculateBudgetSpent();
       _saveState();
@@ -475,11 +544,12 @@ class AppState extends ChangeNotifier {
     final asset = _assets[assetIndex];
     final cost = quantity * asset.currentPrice;
 
-    if (_cashReserves < cost) {
-      return false; // Insufficient Cash Wallet funds
+    if (_bankingBalance < cost) {
+      return false; // Insufficient Banking Wallet funds
     }
 
-    _cashReserves -= cost;
+    _bankingBalance -= cost;
+    _cashReserves = _cashBalance + _bankingBalance + _ewalletBalance;
 
     // Recalculate average buy price and owned quantity
     final double currentQty = asset.totalQuantity;
@@ -517,7 +587,8 @@ class AppState extends ChangeNotifier {
     }
 
     final double proceeds = quantity * asset.currentPrice;
-    _cashReserves += proceeds;
+    _bankingBalance += proceeds;
+    _cashReserves = _cashBalance + _bankingBalance + _ewalletBalance;
 
     asset.totalQuantity -= quantity;
     if (asset.totalQuantity == 0) {

@@ -55,10 +55,9 @@ class _InvestScreenState extends State<InvestScreen> with SingleTickerProviderSt
             final qty = double.tryParse(quantityController.text) ?? 0.0;
             final double totalCost = qty * price;
             
-            // Validate real-time trades
             bool isValid = qty > 0;
             if (type == InvestmentType.buy) {
-              isValid = isValid && (totalCost <= state.cashReserves);
+              isValid = isValid && (totalCost <= state.bankingBalance);
             } else {
               isValid = isValid && (qty <= asset.totalQuantity);
             }
@@ -140,11 +139,11 @@ class _InvestScreenState extends State<InvestScreen> with SingleTickerProviderSt
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        AppLocalizations.translate('db_cash_reserves', locale),
+                        locale == 'en' ? 'Banking Balance (Source)' : 'Số dư Ngân hàng (Nguồn)',
                         style: TextStyle(color: mutedTextColor, fontSize: 13),
                       ),
                       Text(
-                        state.formatAmount(state.cashReserves),
+                        state.formatAmount(state.bankingBalance),
                         style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 14),
                       ),
                     ],
@@ -288,7 +287,7 @@ class _InvestScreenState extends State<InvestScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     final state = AppStateProvider.of(context);
     final locale = state.locale;
-    final isDark = state.themeMode == ThemeMode.dark;
+    final isDark = state.themeMode == ThemeMode.dark || state.themeName == 'gold';
 
     final backgroundColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
@@ -374,6 +373,8 @@ class _InvestScreenState extends State<InvestScreen> with SingleTickerProviderSt
 
               // Wallet Reserves & Portfolio performance
               _buildPortfolioPerformanceCard(state, totalValue, totalPnL, pnlPercent, locale, cardColor, borderColor, textColor, mutedTextColor),
+              const SizedBox(height: 16),
+              _buildLiveRatesTicker(context, state, isDark, cardColor, borderColor, textColor, mutedTextColor),
               const SizedBox(height: 20),
 
               // TabBar selectors: My Portfolio vs Market
@@ -530,6 +531,184 @@ class _InvestScreenState extends State<InvestScreen> with SingleTickerProviderSt
     );
   }
 
+  Widget _buildLiveRatesTicker(BuildContext context, AppState state, bool isDark, Color cardColor, Color borderColor, Color textColor, Color mutedTextColor) {
+    // Retrieve precious metals prices dynamically from state.assets
+    final goldAsset = state.assets.firstWhere((a) => a.ticker == 'GC=F');
+    final silverAsset = state.assets.firstWhere((a) => a.ticker == 'SI=F');
+
+    // Ticker items
+    final List<Widget> tickerItems = [
+      // Gold Spot
+      _buildTickerItem(
+        label: state.locale == 'en' ? 'GOLD SPOT' : 'GIÁ VÀNG SPOT',
+        value: state.formatAmount(goldAsset.currentPrice),
+        changePercent: goldAsset.changePercent,
+        icon: Icons.workspace_premium_rounded,
+        iconColor: Colors.amber,
+        cardColor: cardColor,
+        borderColor: borderColor,
+        textColor: textColor,
+      ),
+      // Silver Spot
+      _buildTickerItem(
+        label: state.locale == 'en' ? 'SILVER SPOT' : 'GIÁ BẠC SPOT',
+        value: state.formatAmount(silverAsset.currentPrice),
+        changePercent: silverAsset.changePercent,
+        icon: Icons.circle_outlined,
+        iconColor: Colors.grey,
+        cardColor: cardColor,
+        borderColor: borderColor,
+        textColor: textColor,
+      ),
+      // USD/VND
+      _buildTickerItem(
+        label: 'USD/VND',
+        value: '${state.exchangeRates['VND']?.toStringAsFixed(0) ?? '25400'} ₫',
+        changePercent: 0.12,
+        icon: Icons.currency_exchange_rounded,
+        iconColor: AppColors.emerald,
+        cardColor: cardColor,
+        borderColor: borderColor,
+        textColor: textColor,
+      ),
+      // USD/EUR
+      _buildTickerItem(
+        label: 'USD/EUR',
+        value: '€${state.exchangeRates['EUR']?.toStringAsFixed(4) ?? '0.9200'}',
+        changePercent: -0.05,
+        icon: Icons.currency_exchange_rounded,
+        iconColor: AppColors.violet,
+        cardColor: cardColor,
+        borderColor: borderColor,
+        textColor: textColor,
+      ),
+      // USD/GBP
+      _buildTickerItem(
+        label: 'USD/GBP',
+        value: '£${state.exchangeRates['GBP']?.toStringAsFixed(4) ?? '0.7900'}',
+        changePercent: 0.08,
+        icon: Icons.currency_exchange_rounded,
+        iconColor: AppColors.amber,
+        cardColor: cardColor,
+        borderColor: borderColor,
+        textColor: textColor,
+      ),
+      // USD/JPY
+      _buildTickerItem(
+        label: 'USD/JPY',
+        value: '¥${state.exchangeRates['JPY']?.toStringAsFixed(2) ?? '156.00'}',
+        changePercent: -0.22,
+        icon: Icons.currency_exchange_rounded,
+        iconColor: AppColors.rose,
+        cardColor: cardColor,
+        borderColor: borderColor,
+        textColor: textColor,
+      ),
+      // USD/SGD
+      _buildTickerItem(
+        label: 'USD/SGD',
+        value: 'S\$${state.exchangeRates['SGD']?.toStringAsFixed(4) ?? '1.3400'}',
+        changePercent: 0.02,
+        icon: Icons.currency_exchange_rounded,
+        iconColor: Colors.blue,
+        cardColor: cardColor,
+        borderColor: borderColor,
+        textColor: textColor,
+      ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4.0, bottom: 8.0),
+          child: Text(
+            state.locale == 'en' ? 'LIVE MARKET TICKER' : 'BẢNG GIÁ THỜI GIAN THỰC',
+            style: TextStyle(
+              color: textColor.withOpacity(0.85),
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 65,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemCount: tickerItems.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 10),
+            itemBuilder: (context, index) => tickerItems[index],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTickerItem({
+    required String label,
+    required String value,
+    required double changePercent,
+    required IconData icon,
+    required Color iconColor,
+    required Color cardColor,
+    required Color borderColor,
+    required Color textColor,
+  }) {
+    final bool isPositive = changePercent >= 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: cardColor,
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: iconColor, size: 18),
+          const SizedBox(width: 8),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.textMutedDark,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  Text(
+                    value,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${isPositive ? '+' : ''}${changePercent.toStringAsFixed(2)}%',
+                    style: TextStyle(
+                      color: isPositive ? AppColors.emerald : AppColors.rose,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPortfolioPerformanceCard(
       AppState state, double totalValue, double profit, double pct, String locale,
       Color cardColor, Color borderColor, Color textColor, Color mutedTextColor) {
@@ -609,11 +788,11 @@ class _InvestScreenState extends State<InvestScreen> with SingleTickerProviderSt
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                AppLocalizations.translate('db_cash_reserves', locale),
+                locale == 'en' ? 'Banking Wallet (for Trading)' : 'Ví Ngân hàng (để Giao dịch)',
                 style: TextStyle(color: mutedTextColor, fontSize: 12),
               ),
               Text(
-                state.formatAmount(state.cashReserves),
+                state.formatAmount(state.bankingBalance),
                 style: TextStyle(color: textColor, fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ],

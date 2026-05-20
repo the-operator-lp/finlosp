@@ -54,6 +54,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
     
     TransactionType selectedType = transactionToEdit?.type ?? TransactionType.expense;
     DateTime selectedDate = transactionToEdit?.dateTime ?? DateTime.now();
+    String selectedPaymentMethod = transactionToEdit?.paymentMethod ?? 'cash';
     
     // Get dynamic active categories list based on selected transaction type
     List<AppCategory> activeCategories = state.categories.where((c) => c.isIncome == (selectedType == TransactionType.income)).toList();
@@ -341,6 +342,59 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     ),
                     const SizedBox(height: 16),
 
+                    // Payment Method selector
+                    Text(
+                      AppLocalizations.translate('tr_payment_method', locale),
+                      style: TextStyle(color: mutedTextColor, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildModalPaymentMethodOption(
+                          method: 'cash',
+                          icon: Icons.payments_rounded,
+                          activeColor: AppColors.cyan,
+                          currentMethod: selectedPaymentMethod,
+                          isDark: isDark,
+                          locale: locale,
+                          onTap: () {
+                            setModalState(() {
+                              selectedPaymentMethod = 'cash';
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildModalPaymentMethodOption(
+                          method: 'banking',
+                          icon: Icons.account_balance_rounded,
+                          activeColor: AppColors.violet,
+                          currentMethod: selectedPaymentMethod,
+                          isDark: isDark,
+                          locale: locale,
+                          onTap: () {
+                            setModalState(() {
+                              selectedPaymentMethod = 'banking';
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildModalPaymentMethodOption(
+                          method: 'ewallet',
+                          icon: Icons.account_balance_wallet_rounded,
+                          activeColor: AppColors.emerald,
+                          currentMethod: selectedPaymentMethod,
+                          isDark: isDark,
+                          locale: locale,
+                          onTap: () {
+                            setModalState(() {
+                              selectedPaymentMethod = 'ewallet';
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
                     // Notes
                     Text(
                       AppLocalizations.translate('tr_notes', locale),
@@ -427,6 +481,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                                 category: selectedCategory!.name,
                                 dateTime: selectedDate,
                                 notes: notesController.text.trim(),
+                                paymentMethod: selectedPaymentMethod,
                               );
 
                               if (isEdit) {
@@ -997,6 +1052,70 @@ class _TrackingScreenState extends State<TrackingScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildModalPaymentMethodOption({
+    required String method,
+    required IconData icon,
+    required Color activeColor,
+    required String currentMethod,
+    required bool isDark,
+    required String locale,
+    required VoidCallback onTap,
+  }) {
+    final isSelected = currentMethod == method;
+    String label = '';
+    if (method == 'cash') {
+      label = AppLocalizations.translate('tr_cash', locale);
+    } else if (method == 'banking') {
+      label = AppLocalizations.translate('tr_banking', locale);
+    } else if (method == 'ewallet') {
+      label = AppLocalizations.translate('tr_ewallet', locale);
+    }
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? activeColor.withOpacity(isDark ? 0.2 : 0.15)
+                : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)),
+            border: Border.all(
+              color: isSelected
+                  ? activeColor
+                  : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+              width: isSelected ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? activeColor : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                size: 18,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected
+                      ? (isDark ? Colors.white : activeColor)
+                      : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

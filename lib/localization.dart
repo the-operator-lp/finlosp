@@ -44,6 +44,10 @@ class AppLocalizations {
       'tr_empty_ledger': 'Your ledger is empty. Tap + to record your first transaction!',
       'tr_delete_confirm': 'Delete Transaction?',
       'tr_delete_confirm_body': 'Are you sure you want to delete this transaction?',
+      'tr_payment_method': 'Payment Source',
+      'tr_cash': 'Cash',
+      'tr_banking': 'Banking',
+      'tr_ewallet': 'E-Wallet',
 
       // Budgets
       'bg_budget_title': 'Category Budgets',
@@ -183,6 +187,10 @@ class AppLocalizations {
       'tr_empty_ledger': 'Sổ thu chi trống. Nhấn + để ghi chép khoản đầu tiên!',
       'tr_delete_confirm': 'Xóa giao dịch?',
       'tr_delete_confirm_body': 'Bạn có chắc chắn muốn xóa giao dịch này không?',
+      'tr_payment_method': 'Nguồn thanh toán',
+      'tr_cash': 'Tiền mặt',
+      'tr_banking': 'Ngân hàng',
+      'tr_ewallet': 'Ví điện tử',
 
       // Budgets
       'bg_budget_title': 'Ngân sách chi tiêu',

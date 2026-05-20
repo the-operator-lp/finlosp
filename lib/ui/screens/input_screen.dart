@@ -21,6 +21,7 @@ class _InputScreenState extends State<InputScreen> {
   TransactionType _selectedType = TransactionType.expense;
   AppCategory? _selectedCategory;
   DateTime _selectedDate = DateTime.now();
+  String _selectedPaymentMethod = 'cash';
 
   @override
   void dispose() {
@@ -37,6 +38,7 @@ class _InputScreenState extends State<InputScreen> {
     setState(() {
       _selectedDate = DateTime.now();
       _selectedCategory = null;
+      _selectedPaymentMethod = 'cash';
     });
   }
 
@@ -79,6 +81,7 @@ class _InputScreenState extends State<InputScreen> {
     final double rate = state.exchangeRates[state.selectedCurrency] ?? 1.0;
     final double amountInUSD = amount / rate;
 
+    // TODO: Connect this logged paymentMethod with external Open Banking/e-wallet APIs in the future
     final tx = Transaction(
       id: 't_${DateTime.now().millisecondsSinceEpoch}',
       title: title,
@@ -87,6 +90,7 @@ class _InputScreenState extends State<InputScreen> {
       category: _selectedCategory!.name,
       dateTime: _selectedDate,
       notes: _notesController.text.trim(),
+      paymentMethod: _selectedPaymentMethod,
     );
 
     state.addTransaction(tx);
@@ -448,6 +452,48 @@ class _InputScreenState extends State<InputScreen> {
                         ),
                       );
                     },
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Payment Method Selector
+                Text(
+                  AppLocalizations.translate('tr_payment_method', locale),
+                  style: TextStyle(
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _buildPaymentMethodOption('cash', Icons.payments_rounded, AppColors.cyan, isDark, locale),
+                    const SizedBox(width: 10),
+                    _buildPaymentMethodOption('banking', Icons.account_balance_rounded, AppColors.violet, isDark, locale),
+                    const SizedBox(width: 10),
+                    _buildPaymentMethodOption('ewallet', Icons.account_balance_wallet_rounded, AppColors.emerald, isDark, locale),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0, left: 4.0),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded, size: 12, color: isDark ? Colors.white38 : Colors.black38),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          locale == 'en'
+                              ? 'TODO: Future automated integration with Open Banking APIs'
+                              : 'TODO: Tự động đồng bộ với hệ thống ngân hàng & ví điện tử trong tương lai',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontStyle: FontStyle.italic,
+                            color: isDark ? Colors.white38 : Colors.black38,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -1097,6 +1143,75 @@ class _InputScreenState extends State<InputScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentMethodOption(String method, IconData icon, Color activeColor, bool isDark, String locale) {
+    final isSelected = _selectedPaymentMethod == method;
+    String label = '';
+    if (method == 'cash') {
+      label = AppLocalizations.translate('tr_cash', locale);
+    } else if (method == 'banking') {
+      label = AppLocalizations.translate('tr_banking', locale);
+    } else if (method == 'ewallet') {
+      label = AppLocalizations.translate('tr_ewallet', locale);
+    }
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedPaymentMethod = method;
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? activeColor.withOpacity(isDark ? 0.2 : 0.15)
+                : (isDark ? const Color(0xFF1E293B) : Colors.white),
+            border: Border.all(
+              color: isSelected
+                  ? activeColor
+                  : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
+              width: isSelected ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: activeColor.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    )
+                  ]
+                : [],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? activeColor : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                size: 20,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected
+                      ? (isDark ? Colors.white : activeColor)
+                      : (isDark ? Colors.white70 : const Color(0xFF475569)),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

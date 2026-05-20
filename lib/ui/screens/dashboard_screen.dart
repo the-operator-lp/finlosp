@@ -4,6 +4,7 @@ import '../../localization.dart';
 import '../../state/app_state.dart';
 import '../widgets/custom_charts.dart';
 import '../../services/ad_service.dart';
+import 'stats_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   final VoidCallback onNavigateToLedger;
@@ -22,9 +23,6 @@ class DashboardScreen extends StatelessWidget {
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final mutedTextColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
 
-    final String balanceText = state.formatAmount(state.netWorth);
-    final String cashText = state.formatAmount(state.cashReserves);
-    final String portfolioText = state.formatAmount(state.totalPortfolioValue);
     final String incomeText = state.formatAmount(state.monthlyIncome);
     final String expenseText = state.formatAmount(state.monthlyExpense);
 
@@ -125,8 +123,11 @@ class DashboardScreen extends StatelessWidget {
                   _buildReminderBanner(context, state, locale, cardColor, borderColor, textColor, mutedTextColor),
 
                 // Core Net Worth Display Card
-                _buildNetWorthCard(context, balanceText, cashText, portfolioText, locale),
-                const SizedBox(height: 20),
+                _buildNetWorthCard(context, state, locale),
+                const SizedBox(height: 16),
+
+                // Today's Remaining Budget banner
+                _buildRemainingBudgetBanner(context, state, locale, cardColor, borderColor, textColor, mutedTextColor),
 
                 // Income vs Expense Highlights
                 Row(
@@ -157,6 +158,70 @@ class DashboardScreen extends StatelessWidget {
                       ),
                     ),
                   ],
+                 ),
+                const SizedBox(height: 20),
+
+                // Transition to Detailed Statistics Screen
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const StatsScreen()),
+                    );
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [const Color(0xFF1E1E38), const Color(0xFF1F2937)]
+                            : [Colors.white, const Color(0xFFF3F4F6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      border: Border.all(color: borderColor, width: 1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.violet.withOpacity(0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.bar_chart_rounded, color: AppColors.violet, size: 20),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                locale == 'en' ? 'Detailed Cash Flow Statistics' : 'Thống kê Chi tiết Dòng tiền',
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                locale == 'en' ? 'View curves, savings rates, and allocations' : 'Xem đường xu hướng, tỷ lệ tích lũy và phân bổ',
+                                style: TextStyle(
+                                  color: mutedTextColor,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios_rounded, color: mutedTextColor, size: 14),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 24),
 
@@ -369,7 +434,74 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNetWorthCard(BuildContext context, String balance, String cash, String portfolio, String locale) {
+  Widget _buildRemainingBudgetBanner(BuildContext context, AppState state, String locale, Color cardColor, Color borderColor, Color textColor, Color mutedTextColor) {
+    final remaining = state.todayRemainingBudget;
+    final hasBudget = state.budgets.isNotEmpty;
+    if (!hasBudget) return const SizedBox();
+
+    final isExceeded = remaining < 0;
+    final remainingAbs = remaining.abs();
+    final amountText = state.formatAmount(remainingAbs);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isExceeded ? AppColors.rose.withOpacity(0.08) : AppColors.emerald.withOpacity(0.08),
+        border: Border.all(
+          color: isExceeded ? AppColors.rose.withOpacity(0.3) : AppColors.emerald.withOpacity(0.3),
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isExceeded ? AppColors.rose.withOpacity(0.15) : AppColors.emerald.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isExceeded ? Icons.warning_amber_rounded : Icons.check_circle_outline_rounded,
+              color: isExceeded ? AppColors.rose : AppColors.emerald,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  locale == 'en' ? "Today's Remaining Budget" : "Ngân sách Còn lại Hôm nay",
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isExceeded
+                      ? (locale == 'en' ? "Exceeded daily budget by $amountText" : "Vượt quá ngân sách ngày $amountText")
+                      : (locale == 'en' ? "You have $amountText left to spend today" : "Bạn còn lại $amountText để tiêu hôm nay"),
+                  style: TextStyle(
+                    color: isExceeded ? AppColors.rose : AppColors.emerald,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNetWorthCard(BuildContext context, AppState state, String locale) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -405,7 +537,7 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            balance,
+            state.formatAmount(state.netWorth),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 32,
@@ -413,66 +545,77 @@ class DashboardScreen extends StatelessWidget {
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppLocalizations.translate('db_cash_reserves', locale),
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      cash,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                Container(width: 1, height: 30, color: Colors.white.withOpacity(0.15)),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppLocalizations.translate('db_portfolio_value', locale),
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      portfolio,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          )
+          const SizedBox(height: 20),
+          const Divider(color: Colors.white24, height: 1),
+          const SizedBox(height: 16),
+          // Sub-balances layout 2x2 grid
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 16,
+            childAspectRatio: 2.5,
+            children: [
+              _buildSubBalanceItem(
+                locale == 'en' ? 'Cash Wallet' : 'Ví Tiền mặt',
+                state.formatAmount(state.cashBalance),
+                Icons.payments_rounded,
+              ),
+              _buildSubBalanceItem(
+                locale == 'en' ? 'Banking' : 'Ngân hàng',
+                state.formatAmount(state.bankingBalance),
+                Icons.account_balance_rounded,
+              ),
+              _buildSubBalanceItem(
+                locale == 'en' ? 'E-Wallet' : 'Ví điện tử',
+                state.formatAmount(state.ewalletBalance),
+                Icons.account_balance_wallet_rounded,
+              ),
+              _buildSubBalanceItem(
+                locale == 'en' ? 'Portfolio' : 'Đầu tư',
+                state.formatAmount(state.totalPortfolioValue),
+                Icons.trending_up_rounded,
+              ),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSubBalanceItem(String label, String value, IconData icon) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: Colors.white.withOpacity(0.7), size: 14),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 

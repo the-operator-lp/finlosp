@@ -24,6 +24,11 @@ class StorageData {
   final bool isGoldThemeUnlocked;
   final String currentVersion;
 
+  // Payment Balance splits
+  final double cashBalance;
+  final double bankingBalance;
+  final double ewalletBalance;
+
   StorageData({
     required this.transactionsJson,
     required this.budgetsJson,
@@ -41,6 +46,9 @@ class StorageData {
     required this.adsEnabled,
     required this.isGoldThemeUnlocked,
     required this.currentVersion,
+    required this.cashBalance,
+    required this.bankingBalance,
+    required this.ewalletBalance,
   });
 
   Map<String, dynamic> toJson() {
@@ -61,6 +69,9 @@ class StorageData {
       'adsEnabled': adsEnabled,
       'isGoldThemeUnlocked': isGoldThemeUnlocked,
       'currentVersion': currentVersion,
+      'cashBalance': cashBalance,
+      'bankingBalance': bankingBalance,
+      'ewalletBalance': ewalletBalance,
     };
   }
 
@@ -74,12 +85,14 @@ class StorageData {
       });
     }
 
+    final double reserves = (json['cashReserves'] as num? ?? 50000.0).toDouble();
+
     return StorageData(
       transactionsJson: json['transactions'] as List<dynamic>? ?? [],
       budgetsJson: json['budgets'] as List<dynamic>? ?? [],
       assetsJson: json['assets'] as List<dynamic>? ?? [],
       investTransactionsJson: json['investTransactions'] as List<dynamic>? ?? [],
-      cashReserves: (json['cashReserves'] as num? ?? 50000.0).toDouble(),
+      cashReserves: reserves,
       locale: json['locale'] as String? ?? 'en',
       remindersEnabled: json['remindersEnabled'] as bool? ?? true,
       reminderHour: json['reminderHour'] as int? ?? 20,
@@ -91,6 +104,9 @@ class StorageData {
       adsEnabled: json['adsEnabled'] as bool? ?? true,
       isGoldThemeUnlocked: json['isGoldThemeUnlocked'] as bool? ?? false,
       currentVersion: json['currentVersion'] as String? ?? '1.0.0+1',
+      cashBalance: (json['cashBalance'] as num? ?? (json['cashReserves'] != null ? reserves * 0.3 : 15000.0)).toDouble(),
+      bankingBalance: (json['bankingBalance'] as num? ?? (json['cashReserves'] != null ? reserves * 0.6 : 30000.0)).toDouble(),
+      ewalletBalance: (json['ewalletBalance'] as num? ?? (json['cashReserves'] != null ? reserves * 0.1 : 5000.0)).toDouble(),
     );
   }
 }

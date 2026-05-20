@@ -12,6 +12,7 @@ class Transaction {
   final String category;
   final DateTime dateTime;
   final String notes;
+  final String paymentMethod; // e.g. 'cash', 'banking', 'ewallet'
 
   Transaction({
     required this.id,
@@ -21,6 +22,7 @@ class Transaction {
     required this.category,
     required this.dateTime,
     this.notes = '',
+    this.paymentMethod = 'cash',
   });
 
   Map<String, dynamic> toJson() {
@@ -32,6 +34,7 @@ class Transaction {
       'category': category,
       'dateTime': dateTime.toIso8601String(),
       'notes': notes,
+      'paymentMethod': paymentMethod,
     };
   }
 
@@ -44,6 +47,7 @@ class Transaction {
       category: json['category'] as String,
       dateTime: DateTime.parse(json['dateTime'] as String),
       notes: json['notes'] as String? ?? '',
+      paymentMethod: json['paymentMethod'] as String? ?? 'cash',
     );
   }
 }
