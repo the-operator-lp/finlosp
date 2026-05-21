@@ -28,6 +28,7 @@ class StorageData {
   final double cashBalance;
   final double bankingBalance;
   final double ewalletBalance;
+  final double cryptoBalance;
 
   StorageData({
     required this.transactionsJson,
@@ -49,6 +50,7 @@ class StorageData {
     required this.cashBalance,
     required this.bankingBalance,
     required this.ewalletBalance,
+    required this.cryptoBalance,
   });
 
   Map<String, dynamic> toJson() {
@@ -72,6 +74,7 @@ class StorageData {
       'cashBalance': cashBalance,
       'bankingBalance': bankingBalance,
       'ewalletBalance': ewalletBalance,
+      'cryptoBalance': cryptoBalance,
     };
   }
 
@@ -107,6 +110,7 @@ class StorageData {
       cashBalance: (json['cashBalance'] as num? ?? (json['cashReserves'] != null ? reserves * 0.3 : 15000.0)).toDouble(),
       bankingBalance: (json['bankingBalance'] as num? ?? (json['cashReserves'] != null ? reserves * 0.6 : 30000.0)).toDouble(),
       ewalletBalance: (json['ewalletBalance'] as num? ?? (json['cashReserves'] != null ? reserves * 0.1 : 5000.0)).toDouble(),
+      cryptoBalance: (json['cryptoBalance'] as num? ?? 0.0).toDouble(),
     );
   }
 }

@@ -283,6 +283,278 @@ class _InvestScreenState extends State<InvestScreen> with SingleTickerProviderSt
     );
   }
 
+  void _showAddAssetSheet(BuildContext context, AppState state) {
+    final locale = state.locale;
+    final isDark = state.themeMode == ThemeMode.dark || state.themeName == 'gold';
+    final backgroundColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final mutedTextColor = isDark ? AppColors.textMutedDark : AppColors.textMutedLight;
+
+    final nameController = TextEditingController();
+    final tickerController = TextEditingController();
+    final priceController = TextEditingController();
+    
+    AssetCategory selectedCategory = AssetCategory.crypto;
+    String? errorMessage;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 32,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          locale == 'en' ? 'Add Custom Asset' : 'Thêm tài sản tùy chỉnh',
+                          style: TextStyle(color: textColor, fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: Icon(Icons.close_rounded, color: textColor, size: 24),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Asset Name input
+                    Text(
+                      locale == 'en' ? 'Asset Name' : 'Tên tài sản',
+                      style: TextStyle(color: mutedTextColor, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: nameController,
+                      style: TextStyle(color: textColor, fontSize: 16),
+                      textCapitalization: TextCapitalization.words,
+                      decoration: InputDecoration(
+                        hintText: locale == 'en' ? 'e.g. Solana' : 'Ví dụ: Solana',
+                        hintStyle: TextStyle(color: mutedTextColor),
+                        filled: true,
+                        fillColor: backgroundColor,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppColors.violet, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Ticker symbol input
+                    Text(
+                      locale == 'en' ? 'Ticker Symbol' : 'Mã giao dịch',
+                      style: TextStyle(color: mutedTextColor, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: tickerController,
+                      style: TextStyle(color: textColor, fontSize: 16),
+                      textCapitalization: TextCapitalization.characters,
+                      decoration: InputDecoration(
+                        hintText: locale == 'en' ? 'e.g. SOL-USD' : 'Ví dụ: SOL-USD',
+                        hintStyle: TextStyle(color: mutedTextColor),
+                        filled: true,
+                        fillColor: backgroundColor,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppColors.violet, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Category dropdown
+                    Text(
+                      locale == 'en' ? 'Asset Category' : 'Danh mục tài sản',
+                      style: TextStyle(color: mutedTextColor, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<AssetCategory>(
+                      value: selectedCategory,
+                      dropdownColor: cardColor,
+                      style: TextStyle(color: textColor, fontSize: 16),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: backgroundColor,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppColors.violet, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                      ),
+                      items: [
+                        DropdownMenuItem(
+                          value: AssetCategory.stock,
+                          child: Text(locale == 'en' ? 'Stock' : 'Cổ phiếu'),
+                        ),
+                        DropdownMenuItem(
+                          value: AssetCategory.crypto,
+                          child: Text(locale == 'en' ? 'Cryptocurrency' : 'Tiền điện tử'),
+                        ),
+                        DropdownMenuItem(
+                          value: AssetCategory.metal,
+                          child: Text(locale == 'en' ? 'Precious Metal' : 'Kim loại quý'),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setModalState(() {
+                            selectedCategory = val;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Initial Price input
+                    Text(
+                      locale == 'en' ? 'Initial Price' : 'Giá khởi điểm',
+                      style: TextStyle(color: mutedTextColor, fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: priceController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(color: textColor, fontSize: 16),
+                      decoration: InputDecoration(
+                        hintText: '0.0',
+                        hintStyle: TextStyle(color: mutedTextColor),
+                        prefixText: '\$ ',
+                        prefixStyle: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+                        filled: true,
+                        fillColor: backgroundColor,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(color: AppColors.violet, width: 2),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: borderColor),
+                        ),
+                      ),
+                    ),
+                    
+                    if (errorMessage != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        errorMessage!,
+                        style: const TextStyle(color: AppColors.rose, fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                    const SizedBox(height: 28),
+
+                    // Save Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.violet,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: () {
+                          final name = nameController.text.trim();
+                          final ticker = tickerController.text.trim();
+                          final priceStr = priceController.text.trim();
+
+                          if (name.isEmpty || ticker.isEmpty || priceStr.isEmpty) {
+                            setModalState(() {
+                              errorMessage = locale == 'en'
+                                  ? 'All fields are required.'
+                                  : 'Vui lòng nhập đầy đủ thông tin.';
+                            });
+                            return;
+                          }
+
+                          final price = double.tryParse(priceStr);
+                          if (price == null || price <= 0) {
+                            setModalState(() {
+                              errorMessage = locale == 'en'
+                                  ? 'Please enter a valid positive initial price.'
+                                  : 'Vui lòng nhập giá khởi điểm hợp lệ (lớn hơn 0).';
+                            });
+                            return;
+                          }
+
+                          // Check if ticker already exists
+                          final tickerUpper = ticker.toUpperCase();
+                          final exists = state.assets.any((a) => a.ticker == tickerUpper);
+                          if (exists) {
+                            setModalState(() {
+                              errorMessage = locale == 'en'
+                                  ? 'Asset with this ticker already exists.'
+                                  : 'Mã tài sản này đã tồn tại.';
+                            });
+                            return;
+                          }
+
+                          // Add asset
+                          state.addCustomAsset(name, tickerUpper, selectedCategory, price);
+
+                          // Close modal & notify
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                locale == 'en'
+                                    ? 'Custom asset "$name" added successfully!'
+                                    : 'Đã thêm tài sản tùy chỉnh "$name" thành công!',
+                              ),
+                              backgroundColor: AppColors.emerald,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          locale == 'en' ? 'Add Asset' : 'Thêm tài sản',
+                          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = AppStateProvider.of(context);
@@ -854,13 +1126,61 @@ class _InvestScreenState extends State<InvestScreen> with SingleTickerProviderSt
     // Sort
     allAssets = _sortAssets(allAssets);
 
-    return ListView.builder(
-      physics: const BouncingScrollPhysics(),
-      itemCount: allAssets.length,
-      itemBuilder: (context, index) {
-        final asset = allAssets[index];
-        return _buildMarketAssetCard(context, state, asset, locale, cardColor, borderColor, textColor, mutedTextColor);
-      },
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: () => _showAddAssetSheet(context, state),
+          child: Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 12, top: 4),
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.violet.withOpacity(0.15),
+                  Colors.purple.withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              border: Border.all(
+                color: AppColors.violet.withOpacity(0.3),
+                width: 1.5,
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.add_circle_outline_rounded,
+                  color: AppColors.violet,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  locale == 'en' ? '+ Add Custom Asset' : '+ Thêm tài sản tùy chỉnh',
+                  style: const TextStyle(
+                    color: AppColors.violet,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            physics: const BouncingScrollPhysics(),
+            itemCount: allAssets.length,
+            itemBuilder: (context, index) {
+              final asset = allAssets[index];
+              return _buildMarketAssetCard(context, state, asset, locale, cardColor, borderColor, textColor, mutedTextColor);
+            },
+          ),
+        ),
+      ],
     );
   }
 

@@ -13,6 +13,7 @@ class AppLocalizations {
       'db_net_worth': 'Net Worth',
       'db_portfolio_value': 'Portfolio Value',
       'db_cash_reserves': 'Cash Wallet',
+      'db_crypto_wallet': 'Crypto Wallet',
       'db_monthly_income': 'Monthly Income',
       'db_monthly_expense': 'Monthly Expense',
       'db_quick_actions': 'Quick Actions',
@@ -48,6 +49,7 @@ class AppLocalizations {
       'tr_cash': 'Cash',
       'tr_banking': 'Banking',
       'tr_ewallet': 'E-Wallet',
+      'tr_crypto': 'Crypto Wallet',
 
       // Budgets
       'bg_budget_title': 'Category Budgets',
@@ -156,6 +158,7 @@ class AppLocalizations {
       'db_net_worth': 'Tài sản ròng',
       'db_portfolio_value': 'Tài sản đầu tư',
       'db_cash_reserves': 'Ví tiền mặt',
+      'db_crypto_wallet': 'Ví điện tử Crypto',
       'db_monthly_income': 'Thu nhập tháng',
       'db_monthly_expense': 'Chi tiêu tháng',
       'db_quick_actions': 'Thao tác nhanh',
@@ -191,6 +194,7 @@ class AppLocalizations {
       'tr_cash': 'Tiền mặt',
       'tr_banking': 'Ngân hàng',
       'tr_ewallet': 'Ví điện tử',
+      'tr_crypto': 'Ví Crypto',
 
       // Budgets
       'bg_budget_title': 'Ngân sách chi tiêu',

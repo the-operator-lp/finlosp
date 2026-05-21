@@ -363,7 +363,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                             });
                           },
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         _buildModalPaymentMethodOption(
                           method: 'banking',
                           icon: Icons.account_balance_rounded,
@@ -377,7 +377,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                             });
                           },
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         _buildModalPaymentMethodOption(
                           method: 'ewallet',
                           icon: Icons.account_balance_wallet_rounded,
@@ -388,6 +388,20 @@ class _TrackingScreenState extends State<TrackingScreen> {
                           onTap: () {
                             setModalState(() {
                               selectedPaymentMethod = 'ewallet';
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 6),
+                        _buildModalPaymentMethodOption(
+                          method: 'crypto',
+                          icon: Icons.currency_exchange_rounded,
+                          activeColor: Colors.orangeAccent,
+                          currentMethod: selectedPaymentMethod,
+                          isDark: isDark,
+                          locale: locale,
+                          onTap: () {
+                            setModalState(() {
+                              selectedPaymentMethod = 'crypto';
                             });
                           },
                         ),
@@ -1073,6 +1087,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
       label = AppLocalizations.translate('tr_banking', locale);
     } else if (method == 'ewallet') {
       label = AppLocalizations.translate('tr_ewallet', locale);
+    } else if (method == 'crypto') {
+      label = AppLocalizations.translate('tr_crypto', locale);
     }
 
     return Expanded(

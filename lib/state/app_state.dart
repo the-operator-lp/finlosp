@@ -20,6 +20,7 @@ class AppState extends ChangeNotifier {
   double _cashBalance = 15000.0;
   double _bankingBalance = 30000.0;
   double _ewalletBalance = 5000.0;
+  double _cryptoBalance = 0.0;
   String _locale = 'en';
   bool _remindersEnabled = true;
   int _reminderHour = 20; // 8:00 PM
@@ -62,6 +63,7 @@ class AppState extends ChangeNotifier {
   double get cashBalance => _cashBalance;
   double get bankingBalance => _bankingBalance;
   double get ewalletBalance => _ewalletBalance;
+  double get cryptoBalance => _cryptoBalance;
   String get locale => _locale;
   bool get remindersEnabled => _remindersEnabled;
   int get reminderHour => _reminderHour;
@@ -143,7 +145,8 @@ class AppState extends ChangeNotifier {
       _cashBalance = data.cashBalance;
       _bankingBalance = data.bankingBalance;
       _ewalletBalance = data.ewalletBalance;
-      _cashReserves = _cashBalance + _bankingBalance + _ewalletBalance;
+      _cryptoBalance = data.cryptoBalance;
+      _cashReserves = _cashBalance + _bankingBalance + _ewalletBalance + _cryptoBalance;
       _locale = data.locale;
       _remindersEnabled = data.remindersEnabled;
       _reminderHour = data.reminderHour;
@@ -210,7 +213,8 @@ class AppState extends ChangeNotifier {
     _cashBalance = 7500.0;
     _bankingBalance = 15000.0;
     _ewalletBalance = 2500.0;
-    _cashReserves = _cashBalance + _bankingBalance + _ewalletBalance;
+    _cryptoBalance = 0.0;
+    _cashReserves = _cashBalance + _bankingBalance + _ewalletBalance + _cryptoBalance;
     _remindersEnabled = true;
     _reminderHour = 20;
     _reminderMinute = 0;
@@ -443,6 +447,7 @@ class AppState extends ChangeNotifier {
       cashBalance: _cashBalance,
       bankingBalance: _bankingBalance,
       ewalletBalance: _ewalletBalance,
+      cryptoBalance: _cryptoBalance,
     );
     await _storageService.saveData(data);
   }
@@ -466,12 +471,15 @@ class AppState extends ChangeNotifier {
       case 'ewallet':
         _ewalletBalance += change;
         break;
+      case 'crypto':
+        _cryptoBalance += change;
+        break;
       case 'cash':
       default:
         _cashBalance += change;
         break;
     }
-    _cashReserves = _cashBalance + _bankingBalance + _ewalletBalance;
+    _cashReserves = _cashBalance + _bankingBalance + _ewalletBalance + _cryptoBalance;
   }
 
   void addTransaction(Transaction transaction) {
@@ -609,6 +617,33 @@ class AppState extends ChangeNotifier {
     _saveState();
     notifyListeners();
     return true;
+  }
+
+  // --- Dynamic Asset Customizer ---
+
+  void addCustomAsset(String name, String ticker, AssetCategory category, double initialPrice) {
+    // Generate a unique asset ID
+    final id = 'asset_custom_${DateTime.now().millisecondsSinceEpoch}';
+
+    // Create a new InvestmentAsset
+    // Initialize 7 days of simulated history with the initial price to prevent sparkline crashes
+    final newAsset = InvestmentAsset(
+      id: id,
+      name: name,
+      ticker: ticker.toUpperCase(),
+      category: category,
+      currentPrice: initialPrice,
+      changePercent: 0.0,
+      historicalPrices: List.filled(7, initialPrice),
+      averageBuyPrice: 0.0,
+      totalQuantity: 0.0,
+    );
+
+    // TODO: Implement external live API synchronization (e.g. BTC/ETH public address trackers, stock ledger syncing)
+
+    _assets.add(newAsset);
+    _saveState();
+    notifyListeners();
   }
 
   // --- Real-time Price Integration Engine ---

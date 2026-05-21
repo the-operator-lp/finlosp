@@ -573,11 +573,67 @@ class DashboardScreen extends StatelessWidget {
                 Icons.account_balance_wallet_rounded,
               ),
               _buildSubBalanceItem(
-                locale == 'en' ? 'Portfolio' : 'Đầu tư',
-                state.formatAmount(state.totalPortfolioValue),
-                Icons.trending_up_rounded,
+                AppLocalizations.translate('db_crypto_wallet', locale),
+                state.formatAmount(state.cryptoBalance),
+                Icons.currency_exchange_rounded,
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          // Full-width Portfolio Investment Capsule
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.06),
+              border: Border.all(color: Colors.white.withOpacity(0.12)),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.violet.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.trending_up_rounded,
+                    color: AppColors.violet,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        locale == 'en' ? 'Portfolio Value' : 'Tài sản đầu tư',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.65),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        state.formatAmount(state.totalPortfolioValue),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white30,
+                  size: 14,
+                ),
+              ],
+            ),
           ),
         ],
       ),

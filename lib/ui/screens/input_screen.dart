@@ -469,10 +469,12 @@ class _InputScreenState extends State<InputScreen> {
                 Row(
                   children: [
                     _buildPaymentMethodOption('cash', Icons.payments_rounded, AppColors.cyan, isDark, locale),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     _buildPaymentMethodOption('banking', Icons.account_balance_rounded, AppColors.violet, isDark, locale),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     _buildPaymentMethodOption('ewallet', Icons.account_balance_wallet_rounded, AppColors.emerald, isDark, locale),
+                    const SizedBox(width: 8),
+                    _buildPaymentMethodOption('crypto', Icons.currency_exchange_rounded, Colors.orangeAccent, isDark, locale),
                   ],
                 ),
                 Padding(
@@ -1156,6 +1158,8 @@ class _InputScreenState extends State<InputScreen> {
       label = AppLocalizations.translate('tr_banking', locale);
     } else if (method == 'ewallet') {
       label = AppLocalizations.translate('tr_ewallet', locale);
+    } else if (method == 'crypto') {
+      label = AppLocalizations.translate('tr_crypto', locale);
     }
 
     return Expanded(
